@@ -1,24 +1,26 @@
-package seller
+package controller
 
 import (
+	"coding-challenge-go/pkg/seller"
 	"encoding/json"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
-	"net/http"
 )
 
-func NewController(repository *Repository) *controller {
-	return &controller{
-		repository: repository,
+func NewSellerController(sellerSvc seller.Service) *sellerController {
+	return &sellerController{
+		sellerSvc: sellerSvc,
 	}
 }
 
-type controller struct {
-	repository *Repository
+type sellerController struct {
+	sellerSvc seller.Service
 }
 
-func (pc *controller) List(c *gin.Context) {
-	sellers, err := pc.repository.list()
+func (sc *sellerController) List(c *gin.Context) {
+	sellers, err := sc.sellerSvc.List(c.Request.Context())
 
 	if err != nil {
 		log.Error().Err(err).Msg("Fail to query seller list")

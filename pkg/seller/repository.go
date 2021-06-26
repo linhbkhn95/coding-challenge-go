@@ -1,16 +1,19 @@
 package seller
 
-import "database/sql"
+import (
+	"context"
+	"database/sql"
+)
 
-func NewRepository(db *sql.DB) *Repository {
-	return &Repository{db: db}
+func NewRepository(db *sql.DB) Repository {
+	return &repository{db: db}
 }
 
-type Repository struct {
+type repository struct {
 	db *sql.DB
 }
 
-func (r *Repository) FindByUUID(uuid string) (*Seller, error) {
+func (r *repository) FindByUUID(ctx context.Context, uuid string) (*Seller, error) {
 	rows, err := r.db.Query("SELECT id_seller, name, email, phone, uuid FROM seller WHERE uuid = ?", uuid)
 
 	if err != nil {
@@ -34,7 +37,7 @@ func (r *Repository) FindByUUID(uuid string) (*Seller, error) {
 	return seller, nil
 }
 
-func (r *Repository) list() ([]*Seller, error) {
+func (r *repository) List(ctx context.Context) ([]*Seller, error) {
 	rows, err := r.db.Query("SELECT id_seller, name, email, phone, uuid FROM seller")
 
 	if err != nil {
@@ -58,4 +61,3 @@ func (r *Repository) list() ([]*Seller, error) {
 
 	return sellers, nil
 }
-
