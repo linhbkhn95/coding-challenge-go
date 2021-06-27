@@ -28,7 +28,7 @@ func Server(cfg *config.AppConfig) {
 	defer db.Close()
 
 	r := gin.New()
-	v1 := r.Group("api/v1")
+
 	productRepository := product.NewRepository(db)
 	sellerRepository := seller.NewRepository(db)
 	emailProvider := seller.NewEmailProvider()
@@ -38,15 +38,25 @@ func Server(cfg *config.AppConfig) {
 	productController := controller.NewProductController(productSvc)
 	sellerController := controller.NewSellerController(sellerSvc)
 
-	// path for product
-	v1.GET("products", productController.List)
-	v1.GET("product", productController.Get)
-	v1.POST("product", productController.Post)
-	v1.PUT("product", productController.Put)
-	v1.DELETE("product", productController.Delete)
+	v1 := r.Group("api/v1")
+	{
+		// path for product
+		v1.GET("products", productController.List)
+		v1.GET("product", productController.Get)
+		v1.POST("product", productController.Post)
+		v1.PUT("product", productController.Put)
+		v1.DELETE("product", productController.Delete)
 
-	// Path for seller
-	v1.GET("sellers", sellerController.List)
+		// Path for seller
+		v1.GET("sellers", sellerController.List)
+	}
+	
+	v2 := r.Group("api/v2")
+	{
+		v2.GET("products", productController.ListV2)
+		v2.GET("product", productController.GetV2)
+
+	}
 
 	log.Info().Msg("Start server")
 	log.Fatal().Err(r.Run(fmt.Sprintf(":%d", cfg.HTTPPort))).Msg("Fail to listen and serve")
