@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"coding-challenge-go/pkg/product"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -9,16 +8,29 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
+
+	"coding-challenge-go/pkg/product"
+)
+
+type (
+	productController struct {
+		productSvc product.Service
+	}
+
+	ProductResponseV1 struct {
+		ProductID  int    `json:"-"`
+		UUID       string `json:"uuid"`
+		Name       string `json:"name"`
+		Brand      string `json:"brand"`
+		Stock      int    `json:"stock"`
+		SellerUUID string `json:"seller_uuid"`
+	}
 )
 
 func NewProductController(productSvc product.Service) *productController {
 	return &productController{
 		productSvc: productSvc,
 	}
-}
-
-type productController struct {
-	productSvc product.Service
 }
 
 func (pc *productController) List(c *gin.Context) {
@@ -40,7 +52,47 @@ func (pc *productController) List(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Fail to query product list"})
 		return
 	}
+	result := make([]*ProductResponseV1, len(products))
+	for i, p := range products {
+		result[i] = &ProductResponseV1{
+			ProductID:  p.ProductID,
+			UUID:       p.UUID,
+			Name:       p.Name,
+			Brand:      p.Brand,
+			Stock:      p.Stock,
+			SellerUUID: p.SellerUUID,
+		}
+	}
+	productsJson, err := json.Marshal(result)
 
+	if err != nil {
+		log.Error().Err(err).Msg("Fail to marshal products")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Fail to marshal products"})
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json; charset=utf-8", productsJson)
+}
+
+func (pc *productController) ListV2(c *gin.Context) {
+	request := &struct {
+		Page int `form:"page,default=1"`
+	}{}
+
+	if err := c.ShouldBindQuery(request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	products, err := pc.productSvc.List(c.Request.Context(), &product.FilterParams{Paging: &product.Paging{
+		PageNumber: request.Page,
+	}})
+
+	if err != nil {
+		log.Error().Err(err).Msg(fmt.Sprintf("Fail to query product list with err=%s", err.Error()))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Fail to query product list"})
+		return
+	}
 	productsJson, err := json.Marshal(products)
 
 	if err != nil {
@@ -53,6 +105,47 @@ func (pc *productController) List(c *gin.Context) {
 }
 
 func (pc *productController) Get(c *gin.Context) {
+	request := &struct {
+		UUID string `form:"id" binding:"required"`
+	}{}
+
+	if err := c.ShouldBindQuery(request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	p, err := pc.productSvc.FindByUUID(c.Request.Context(), request.UUID)
+
+	if err != nil {
+		log.Error().Err(err).Msg(fmt.Sprintf("Fail to get product with err=%s", err.Error()))
+
+		if _, ok := err.(*product.ProductNotFoundError); ok {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Fail to query product by uuid"})
+		return
+	}
+
+	productJson, err := json.Marshal(&ProductResponseV1{
+		ProductID:  p.ProductID,
+		UUID:       p.UUID,
+		Name:       p.Name,
+		Brand:      p.Brand,
+		Stock:      p.Stock,
+		SellerUUID: p.SellerUUID,
+	})
+
+	if err != nil {
+		log.Error().Err(err).Msg("Fail to marshal product")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Fail to marshal product"})
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json; charset=utf-8", productJson)
+}
+
+func (pc *productController) GetV2(c *gin.Context) {
 	request := &struct {
 		UUID string `form:"id" binding:"required"`
 	}{}

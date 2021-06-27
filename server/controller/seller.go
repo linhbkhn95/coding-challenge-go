@@ -1,12 +1,13 @@
 package controller
 
 import (
-	"coding-challenge-go/pkg/seller"
 	"encoding/json"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
+
+	"coding-challenge-go/pkg/seller"
 )
 
 func NewSellerController(sellerSvc seller.Service) *sellerController {
