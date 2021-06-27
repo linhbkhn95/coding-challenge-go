@@ -139,11 +139,14 @@ func (s *service) Update(ctx context.Context, product *Product) error {
 		return err
 	}
 	if oldStock != product.Stock {
-		seller, err := s.sellerRepo.FindByUUID(ctx, product.SellerUUID)
+		sl, err := s.sellerRepo.FindByUUID(ctx, product.SellerUUID)
 		if err != nil {
 			return err
 		}
-		s.emailProvider.StockChanged(oldStock, product.Stock, seller.Email)
+		if sl == nil {
+			return SellerNotFoundError{id: product.SellerUUID}
+		}
+		s.emailProvider.StockChanged(oldStock, product.Stock, sl.Email)
 	}
 
 	return nil
