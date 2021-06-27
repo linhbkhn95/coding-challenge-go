@@ -2,8 +2,13 @@ package product
 
 import (
 	"context"
+	"fmt"
 
 	"coding-challenge-go/pkg/seller"
+)
+
+var (
+	serverAddress = "http://localhost:8080"
 )
 
 const (
@@ -12,8 +17,8 @@ const (
 
 type (
 	Service interface {
-		List(ctx context.Context, params *FilterParams) ([]*Product, error)
-		FindByUUID(ctx context.Context, uuid string) (*Product, error)
+		List(ctx context.Context, params *FilterParams) ([]*ProductInfo, error)
+		FindByUUID(ctx context.Context, uuid string) (*ProductInfo, error)
 		Update(ctx context.Context, product *Product) error
 		Create(ctx context.Context, product *Product) error
 		Delete(ctx context.Context, uuid string) error
@@ -28,8 +33,11 @@ type (
 	}
 
 	Repository interface {
+		// List to get list of products by offset and limit.
 		List(ctx context.Context, offset int, limit int) ([]*Product, error)
+		// FindByUUID return a product when found.
 		FindByUUID(ctx context.Context, uuid string) (*Product, error)
+		// Update to update product information.
 		Update(ctx context.Context, product *Product) error
 		Create(ctx context.Context, product *Product) error
 		Delete(ctx context.Context, product *Product) error
@@ -39,6 +47,22 @@ type (
 		repo          Repository
 		sellerRepo    seller.Repository
 		emailProvider seller.EmailProvider
+	}
+
+	ProductInfo struct {
+		*Product
+		Seller *SellerInfo `json:"seller"`
+	}
+	SellerInfo struct {
+		UUID  string       `json:"uuid"`
+		Links *SellerLinks `json:"_links"`
+	}
+
+	SellerLinks struct {
+		Self *SelfSellerLink `json:"self"`
+	}
+	SelfSellerLink struct {
+		Href string `json:"href"`
 	}
 )
 
@@ -50,16 +74,27 @@ func NewService(productRepo Repository, sellerRepo seller.Repository, emailProvi
 	}
 }
 
-func (s *service) List(ctx context.Context, params *FilterParams) ([]*Product, error) {
+func (s *service) List(ctx context.Context, params *FilterParams) ([]*ProductInfo, error) {
 	if params.Paging == nil {
 		params.Paging = &Paging{
 			PageNumber: 0,
 		}
 	}
-	return s.repo.List(ctx, (params.Paging.PageNumber-1)*defaultListPageSize, defaultListPageSize)
+	products, err := s.repo.List(ctx, (params.Paging.PageNumber-1)*defaultListPageSize, defaultListPageSize)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]*ProductInfo, len(products))
+	for i, p := range products {
+		result[i] = &ProductInfo{
+			Product: p,
+			Seller:  generateSellerInfo(p.SellerUUID),
+		}
+	}
+	return result, nil
 }
 
-func (s *service) FindByUUID(ctx context.Context, uuid string) (*Product, error) {
+func (s *service) FindByUUID(ctx context.Context, uuid string) (*ProductInfo, error) {
 	product, err := s.repo.FindByUUID(ctx, uuid)
 	if err != nil {
 		return nil, err
@@ -67,7 +102,26 @@ func (s *service) FindByUUID(ctx context.Context, uuid string) (*Product, error)
 	if product == nil {
 		return nil, &ProductNotFoundError{id: uuid}
 	}
-	return product, nil
+
+	return &ProductInfo{
+		Product: product,
+		Seller:  generateSellerInfo(product.SellerUUID),
+	}, nil
+}
+
+func generateSellerInfo(sellerUUID string) *SellerInfo {
+	return &SellerInfo{
+		UUID: sellerUUID,
+		Links: &SellerLinks{
+			Self: &SelfSellerLink{
+				Href: generateSellerLink(sellerUUID),
+			},
+		},
+	}
+}
+
+func generateSellerLink(sellerUUID string) string {
+	return fmt.Sprintf("%s/api/v1/sellers/%s", serverAddress, sellerUUID)
 }
 
 func (s *service) Update(ctx context.Context, product *Product) error {
