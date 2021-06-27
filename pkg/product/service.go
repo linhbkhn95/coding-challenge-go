@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/rs/zerolog/log"
+
 	"coding-challenge-go/pkg/seller"
 )
 
@@ -44,9 +46,9 @@ type (
 	}
 
 	service struct {
-		repo          Repository
-		sellerRepo    seller.Repository
-		emailProvider seller.EmailProvider
+		repo         Repository
+		sellerRepo   seller.Repository
+		notiProvider seller.NotiProvider
 	}
 
 	ProductInfo struct {
@@ -66,11 +68,11 @@ type (
 	}
 )
 
-func NewService(productRepo Repository, sellerRepo seller.Repository, emailProvider seller.EmailProvider) Service {
+func NewService(productRepo Repository, sellerRepo seller.Repository, notiProvider seller.NotiProvider) Service {
 	return &service{
-		repo:          productRepo,
-		sellerRepo:    sellerRepo,
-		emailProvider: emailProvider,
+		repo:         productRepo,
+		sellerRepo:   sellerRepo,
+		notiProvider: notiProvider,
 	}
 }
 
@@ -135,24 +137,25 @@ func (s *service) Update(ctx context.Context, product *Product) error {
 
 	oldStock := p.Stock
 
-	product.Name = p.Name
-	product.Brand = p.Brand
-	product.Stock = p.Stock
-
 	err = s.repo.Update(ctx, product)
 	if err != nil {
 		return err
 	}
 
 	if oldStock != product.Stock {
-		seller, err := s.sellerRepo.FindByUUID(ctx, product.SellerUUID)
+		sl, err := s.sellerRepo.FindByUUID(ctx, product.SellerUUID)
 
 		if err != nil {
 			return err
 		}
-		s.emailProvider.StockChanged(oldStock, product.Stock, seller.Email)
+		if sl == nil {
+			return SellerNotFoundError{id: product.SellerUUID}
+		}
+		s.notiProvider.StockChanged(oldStock, product.Stock, sl.Email)
+		log.Info().Msg(fmt.Sprintf("%s Warning sent to %s (Phone: %s): %s Product stock changed", s.notiProvider.Type().String(), sl.UUID, sl.Phone, p.Name))
+
 	}
-	return s.repo.Update(ctx, product)
+	return nil
 }
 
 func (s *service) Create(ctx context.Context, product *Product) error {
