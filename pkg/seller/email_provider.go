@@ -1,17 +1,19 @@
 package seller
 
-func NewEmailProvider() EmailProvider {
+func NewEmailProvider() NotiProvider {
 	return &emailProvider{}
 }
 
 type (
-	EmailProvider interface {
-		StockChanged(oldStock int, newStock int, product string)
-	}
 	emailProvider struct {
+		// inject email provider here
 	}
 )
 
 func (ep *emailProvider) StockChanged(oldStock int, newStock int, product string) {
 
+}
+
+func (ep *emailProvider) Type() ProviderType {
+	return Email
 }
