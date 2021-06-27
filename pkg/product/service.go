@@ -134,25 +134,19 @@ func (s *service) Update(ctx context.Context, product *Product) error {
 	}
 
 	oldStock := p.Stock
-
-	product.Name = p.Name
-	product.Brand = p.Brand
-	product.Stock = p.Stock
-
 	err = s.repo.Update(ctx, product)
 	if err != nil {
 		return err
 	}
-
 	if oldStock != product.Stock {
 		seller, err := s.sellerRepo.FindByUUID(ctx, product.SellerUUID)
-
 		if err != nil {
 			return err
 		}
 		s.emailProvider.StockChanged(oldStock, product.Stock, seller.Email)
 	}
-	return s.repo.Update(ctx, product)
+
+	return nil
 }
 
 func (s *service) Create(ctx context.Context, product *Product) error {
