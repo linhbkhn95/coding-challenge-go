@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rs/zerolog/log"
-
 	"coding-challenge-go/pkg/seller"
 )
 
@@ -136,23 +134,21 @@ func (s *service) Update(ctx context.Context, product *Product) error {
 	}
 
 	oldStock := p.Stock
-
+	product.SellerUUID = p.SellerUUID
 	err = s.repo.Update(ctx, product)
 	if err != nil {
 		return err
 	}
-
 	if oldStock != product.Stock {
-		sl, err := s.sellerRepo.FindByUUID(ctx, product.SellerUUID)
-
+		sl, err := s.sellerRepo.FindByUUID(ctx, p.SellerUUID)
 		if err != nil {
 			return err
 		}
 		if sl == nil {
 			return SellerNotFoundError{id: product.SellerUUID}
 		}
-		s.notiProvider.StockChanged(oldStock, product.Stock, sl.Email)
-		log.Info().Msg(fmt.Sprintf("%s Warning sent to %s (Phone: %s): %s Product stock changed", s.notiProvider.Type().String(), sl.UUID, sl.Phone, p.Name))
+		s.notiProvider.StockChanged(oldStock, product.Stock, product.Name, sl)
+		// log.Info().Msg(fmt.Sprintf("%s Warning sent to %s (Phone: %s): %s Product stock changed", s.notiProvider.Type().String(), sl.UUID, sl.Phone, p.Name))
 
 	}
 	return nil
