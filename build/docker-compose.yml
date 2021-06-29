@@ -9,6 +9,7 @@ services:
       MYSQL_USER: 'user'
       MYSQL_PASSWORD: 'password'
       MYSQL_ROOT_PASSWORD: 'password'
+      NOTI_PROVIDER_TYPE: sms
     ports:
       - '33066:3306'
     expose:
@@ -20,10 +21,10 @@ services:
     container_name: gfg_go
     image: golang:1.13
     ports:
-      - "8088:8088"
+      - "8080:8080"
     command: go run main.go
     environment:
-      HTTP_PORT: 8088
+      HTTP_PORT: 8080
       MYSQL_DATABASE: product
       MYSQL_USERNAME: user
       MYSQL_PASSWORD: password
