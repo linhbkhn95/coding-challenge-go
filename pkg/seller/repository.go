@@ -61,3 +61,45 @@ func (r *repository) List(ctx context.Context) ([]*Seller, error) {
 
 	return sellers, nil
 }
+
+func (r *repository) TopByProduct(ctx context.Context, limit int) ([]*Seller, error) {
+
+	queryString := `
+				SELECT 
+					*
+				FROM
+					seller
+				WHERE
+					id_seller IN (SELECT 
+							seller.id_seller
+						FROM
+							seller
+								RIGHT JOIN
+							product ON product.fk_seller = seller.id_seller
+						GROUP BY seller.id_seller
+						ORDER BY SUM(product.stock) DESC)
+				LIMIT ?
+			`
+	rows, err := r.db.Query(queryString, limit)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var sellers []*Seller
+
+	for rows.Next() {
+		seller := &Seller{}
+
+		err := rows.Scan(&seller.SellerID, &seller.Name, &seller.Email, &seller.Phone, &seller.UUID)
+		if err != nil {
+			return nil, err
+		}
+
+		sellers = append(sellers, seller)
+	}
+
+	return sellers, nil
+}

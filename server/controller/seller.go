@@ -39,3 +39,23 @@ func (sc *sellerController) List(c *gin.Context) {
 
 	c.Data(http.StatusOK, "application/json; charset=utf-8", sellersJson)
 }
+
+func (sc *sellerController) Top10ByProduct(c *gin.Context) {
+	sellers, err := sc.sellerSvc.Top10ByProduct(c.Request.Context())
+
+	if err != nil {
+		log.Error().Err(err).Msg("Fail to query top 10 seller by product")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Fail to query top 10 seller"})
+		return
+	}
+
+	sellersJson, err := json.Marshal(sellers)
+
+	if err != nil {
+		log.Error().Err(err).Msg("Fail to marshal sellers")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Fail to marshal sellers"})
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json; charset=utf-8", sellersJson)
+}

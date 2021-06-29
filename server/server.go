@@ -58,6 +58,7 @@ func Server(cfg *config.AppConfig) {
 		v2.GET("products", productController.ListV2)
 		v2.GET("product", productController.GetV2)
 
+		v2.GET("sellers/top10", sellerController.Top10ByProduct)
 	}
 
 	log.Info().Msg("Start server")
