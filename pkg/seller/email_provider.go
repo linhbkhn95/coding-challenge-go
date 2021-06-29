@@ -10,7 +10,7 @@ type (
 	}
 )
 
-func (ep *emailProvider) StockChanged(oldStock int, newStock int, product string) {
+func (ep *emailProvider) StockChanged(oldStock int, newStock int, product string, sl *Seller) {
 
 }
 
