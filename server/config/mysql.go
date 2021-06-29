@@ -4,12 +4,12 @@ import "fmt"
 
 // MySQLConfig schema
 type MySQLConfig struct {
-	Host     string `name:"host" help:"Mysql host" env:"MYSQL_HORT"`
-	Database string `name:"database" help:"Mysql database" env:"MYSQL_DATABASE"`
-	Port     int    `name:"port" help:"Mysql port" env:"MYSQL_PORT"`
-	Username string `name:"username" help:"Mysql username" env:"MYSQL_USERNAME"`
-	Password string `name:"password" help:"Mysql password" env:"MYSQL_PASSWORD"`
-	Options  string `name:"options" help:"Mysql options" env:"MYSQL_OPTIONS" default:"7845"`
+	Host     string
+	Database string
+	Port     int
+	Username string
+	Password string
+	Options  string
 }
 
 // String return MySQL connection url
