@@ -7,3 +7,10 @@ const (
 	Email ProviderType = iota
 	SMS
 )
+
+type (
+	NotiProvider interface {
+		StockChanged(oldStock int, newStock int, product string, sl *Seller)
+		Type() ProviderType
+	}
+)
