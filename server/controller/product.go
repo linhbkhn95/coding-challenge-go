@@ -43,7 +43,7 @@ func (pc *productController) List(c *gin.Context) {
 		return
 	}
 
-	products, err := pc.productSvc.List(c.Request.Context(), &product.FilterParams{Paging: &product.Paging{
+	products, err := pc.productSvc.List(c.Request.Context(), &product.FilterParams{Pagination: &product.Pagination{
 		PageNumber: request.Page,
 	}})
 
@@ -84,7 +84,7 @@ func (pc *productController) ListV2(c *gin.Context) {
 		return
 	}
 
-	products, err := pc.productSvc.List(c.Request.Context(), &product.FilterParams{Paging: &product.Paging{
+	products, err := pc.productSvc.List(c.Request.Context(), &product.FilterParams{Pagination: &product.Pagination{
 		PageNumber: request.Page,
 	}})
 
