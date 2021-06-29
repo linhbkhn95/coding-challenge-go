@@ -44,9 +44,9 @@ type (
 	}
 
 	service struct {
-		repo          Repository
-		sellerRepo    seller.Repository
-		emailProvider seller.EmailProvider
+		repo         Repository
+		sellerRepo   seller.Repository
+		notiProvider seller.NotiProvider
 	}
 
 	ProductInfo struct {
@@ -66,11 +66,11 @@ type (
 	}
 )
 
-func NewService(productRepo Repository, sellerRepo seller.Repository, emailProvider seller.EmailProvider) Service {
+func NewService(productRepo Repository, sellerRepo seller.Repository, notiProvider seller.NotiProvider) Service {
 	return &service{
-		repo:          productRepo,
-		sellerRepo:    sellerRepo,
-		emailProvider: emailProvider,
+		repo:         productRepo,
+		sellerRepo:   sellerRepo,
+		notiProvider: notiProvider,
 	}
 }
 
@@ -134,21 +134,23 @@ func (s *service) Update(ctx context.Context, product *Product) error {
 	}
 
 	oldStock := p.Stock
+	product.SellerUUID = p.SellerUUID
 	err = s.repo.Update(ctx, product)
 	if err != nil {
 		return err
 	}
 	if oldStock != product.Stock {
-		sl, err := s.sellerRepo.FindByUUID(ctx, product.SellerUUID)
+		sl, err := s.sellerRepo.FindByUUID(ctx, p.SellerUUID)
 		if err != nil {
 			return err
 		}
 		if sl == nil {
 			return SellerNotFoundError{id: product.SellerUUID}
 		}
-		s.emailProvider.StockChanged(oldStock, product.Stock, sl.Email)
-	}
+		s.notiProvider.StockChanged(oldStock, product.Stock, product.Name, sl)
+		// log.Info().Msg(fmt.Sprintf("%s Warning sent to %s (Phone: %s): %s Product stock changed", s.notiProvider.Type().String(), sl.UUID, sl.Phone, p.Name))
 
+	}
 	return nil
 }
 
