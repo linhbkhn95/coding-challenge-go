@@ -25,10 +25,10 @@ type (
 	}
 
 	FilterParams struct {
-		Paging *Paging
+		Pagination *Pagination
 	}
 
-	Paging struct {
+	Pagination struct {
 		PageNumber int
 	}
 
@@ -75,12 +75,12 @@ func NewService(productRepo Repository, sellerRepo seller.Repository, notiProvid
 }
 
 func (s *service) List(ctx context.Context, params *FilterParams) ([]*ProductInfo, error) {
-	if params.Paging == nil {
-		params.Paging = &Paging{
+	if params.Pagination == nil {
+		params.Pagination = &Pagination{
 			PageNumber: 0,
 		}
 	}
-	products, err := s.repo.List(ctx, (params.Paging.PageNumber-1)*defaultListPageSize, defaultListPageSize)
+	products, err := s.repo.List(ctx, (params.Pagination.PageNumber-1)*defaultListPageSize, defaultListPageSize)
 	if err != nil {
 		return nil, err
 	}
